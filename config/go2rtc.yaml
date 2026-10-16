@@ -1,0 +1,14 @@
+# go2rtc: ÚNICA conexión a la cámara. El analizador y el directo leen de aquí.
+# Las credenciales vienen de las variables de entorno (stack de Portainer / .env).
+api:
+  listen: "127.0.0.1:1984"      # solo dentro del NAS; el panel hace de puerta (solo red local)
+rtsp:
+  listen: "127.0.0.1:8554"      # el analizador lee rtsp://127.0.0.1:8554/tapo
+webrtc:
+  listen: ":8555"               # vídeo en directo hacia el móvil (red local)
+  candidates:
+    - ${HOST_IP}:8555            # IP del NAS en tu red (variable HOST_IP del .env)
+streams:
+  tapo: "rtsp://${CAM_USER}:${CAM_PASS}@${CAM_IP}:${CAM_PORT}/${CAM_STREAM}"
+log:
+  level: warn

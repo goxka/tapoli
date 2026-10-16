@@ -1,0 +1,82 @@
+# Tapoli · análisis del sueño con la Tapo C200
+# Arrancar:  sudo docker compose up -d --build     (o: sudo docker-compose up -d --build)
+# Parar:     sudo docker compose down
+#
+# Límites de CPU: el kernel de DSM no admite `cpus:` (cuota CFS), así que cada
+# contenedor se fija a UN núcleo (cpuset "1") con prioridad baja (cpu_shares):
+# Tapoli nunca puede usar más de la mitad del Celeron J4025.
+name: tapoli
+
+x-comun: &comun
+  build:
+    context: .
+    network: host
+  image: tapoli:latest
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    - TZ=Europe/Madrid
+  user: "${PUID:-1000}:${PGID:-100}"   # tu usuario: los archivos creados serán tuyos (ver .env)
+  network_mode: host        # en este NAS la red "bridge" de Docker no tiene salida (ni a la cámara)
+  cpuset: "1"
+  cpu_shares: 512
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  go2rtc:
+    # Único cliente RTSP de la cámara; reparte el vídeo al analizador y al directo (WebRTC)
+    image: alexxit/go2rtc:1.9.14
+    container_name: tapoli-go2rtc
+    restart: unless-stopped
+    network_mode: host
+    env_file: .env
+    volumes:
+      - ./config/go2rtc.yaml:/config/go2rtc.yaml:ro
+    cpuset: "1"
+    cpu_shares: 512
+    mem_limit: 128m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  analizador:
+    <<: *comun
+    container_name: tapoli-analizador
+    command: ["python", "-m", "tapoli.runner"]
+    environment:
+      - TZ=Europe/Madrid
+      - RTSP_SOURCE=rtsp://127.0.0.1:8554/tapo   # lee de go2rtc, no de la cámara
+    depends_on:
+      - go2rtc
+    volumes:
+      - ./config:/config
+      - ./data:/data
+      - ./clips:/clips
+    tmpfs:
+      - /buffer:size=256m,mode=1777   # búfer circular de vídeo en RAM (nunca toca el disco)
+    mem_limit: 768m
+
+  web:
+    <<: *comun
+    container_name: tapoli-web
+    command: ["uvicorn", "tapoli.web:app", "--host", "0.0.0.0", "--port", "8095", "--no-access-log"]
+    depends_on:
+      - analizador
+      - go2rtc
+    # escucha en el puerto 8095 del NAS (red host). Solo red local: NO abras este puerto en el router
+    volumes:
+      - ./config:/config
+      - ./data:/data
+      - ./clips:/clips:ro
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8095/api/status',timeout=5)"]
+      interval: 60s
+      timeout: 10s
+      retries: 3

@@ -1,0 +1,9 @@
+.env
+data/
+clips/
+__pycache__/
+*.pyc
+# configuración y despliegue personales (se crean a partir de los ejemplos)
+config/config.yaml
+docker-compose.portainer.yml
+NOTAS-PRIVADAS.md

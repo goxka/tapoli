@@ -1,0 +1,98 @@
+# =====================================================================
+#  Tapoli · configuración
+#  El analizador relee este archivo solo (en menos de 1 minuto) cuando
+#  cambia. El panel también lo modifica al aplicar una calibración o al
+#  guardar la zona de la cuna; los comentarios se conservan.
+#  Las credenciales NO van aquí: están en el archivo .env
+# =====================================================================
+
+# --- Análisis de vídeo ------------------------------------------------
+video:
+  fps: 3                      # fotogramas por segundo analizados (2–5). Más = más CPU
+  ancho: 320                  # resolución de análisis (el vídeo se reduce antes de analizar)
+  alto: 180
+
+# --- Movimiento -------------------------------------------------------
+movimiento:
+  # Zona de la cuna: polígono con coordenadas relativas (0–1) sobre la imagen,
+  # [x, y] con origen arriba a la izquierda. Se edita cómodamente en
+  # Panel → Ajustes → "Zona de la cuna". Lo de fuera NO cuenta como movimiento
+  # de la bebé (nosotros entrando, cortinas…), aunque se registra aparte.
+  zona_cuna: [[0.44, 0.0], [0.75, 0.0], [0.8, 0.62], [0.72, 0.86], [0.36, 0.72], [0.27, 0.42]]
+  # Rectángulos [x1, y1, x2, y2] que se ignoran siempre (reloj y logo de la cámara)
+  zonas_excluidas: [[0.0, 0.0, 0.37, 0.065], [0.0, 0.87, 0.13, 1.0]]
+  umbral_pixel: 10            # diferencia de gris (0–255) para que un píxel cuente como "cambiado".
+                              # Filtra el grano del infrarrojo. Medido: el ruido en reposo es ~0.
+  umbral_base: 0.01           # fracción de la zona de la cuna que debe cambiar para que un segundo
+                              # sea "con movimiento" cuando sensibilidad = 5 (0.01 = 1 %).
+                              # Medido: respirar ≈ 0.3 %, girarse ≈ 3–12 %.
+  cambio_global_max: 0.45     # si cambia a la vez más de esta fracción de TODA la imagen es un
+                              # cambio de luz / paso a infrarrojo / autoajuste: se ignora ese instante.
+
+# --- Sonido ------------------------------------------------------------
+sonido:
+  banda_voz_hz: [300, 3000]   # banda donde está el llanto y el balbuceo
+  margen_db: 12               # hay "voz" si la energía en la banda supera el ruido de fondo en estos dB…
+  minimo_dbfs: -45            # …y además supera este nivel absoluto (la cámara entrega silencio
+                              # digital, ~-72 dBFS, cuando la habitación está en calma)
+  ratio_banda_min: 0.55       # fracción mínima de la energía que debe estar en la banda de voz
+                              # (descarta golpes graves y siseos agudos)
+  fraccion_subventanas: 0.5   # cada segundo se divide en 4 trozos de 250 ms; fracción de trozos
+                              # que deben cumplir lo anterior para marcar el segundo como "voz"
+  ventana_ruido_fondo_min: 10 # minutos usados para estimar el ruido de fondo (percentil 20)
+
+# --- Episodios de movimiento (para guardar clips) -----------------------
+# Usan el umbral de "movimiento" (no el de despertar): cualquier movimiento
+# o sonido de voz genera un clip para que puedas revisarlo y etiquetarlo.
+episodios:
+  min_seg_activos: 2          # segundos con movimiento o voz dentro de 5 s para iniciar un episodio
+  calma_fin_s: 5              # segundos seguidos de calma que cierran el episodio
+  pre_s: 3                    # segundos guardados ANTES del inicio (búfer circular en RAM)
+  post_s: 2                   # segundos guardados DESPUÉS del final
+  max_clip_s: 180             # duración máxima de un clip; si el episodio dura más, se trocea
+  solo_de_noche: true         # grabar clips solo dentro de la ventana de noche
+
+# --- Despertar (algoritmo tipo actigrafía) ------------------------------
+# Trabaja por minutos. Un minuto es "activo" si tiene al menos
+# seg_activos_minuto segundos con movimiento. Un minuto tiene "voz" si tiene
+# al menos voz_seg_minuto segundos de voz/llanto.
+#   · Moverse un momento (girarse, estirarse) = minuto activo suelto → NO es despertar.
+#   · DESPERTAR empieza si, en los últimos Y minutos, hay ≥ X minutos activos,
+#     o un minuto activo con voz (si voz_dispara), o ≥ voz_sola_min minutos con voz.
+#   · El despertar TERMINA tras Z minutos seguidos de calma.
+#   · Dos despertares separados por menos de N minutos se FUSIONAN en uno.
+despertar:
+  sensibilidad: 5             # 1–10. Ajusta el umbral de movimiento por segundo:
+                              # umbral = umbral_base × 1.5^(5 − sensibilidad)
+                              # 3 → 2.25 %, 5 → 1 %, 7 → 0.44 % de la cuna
+  seg_activos_minuto: 6       # segundos con movimiento para que un minuto cuente como activo
+  voz_seg_minuto: 5           # segundos de voz para que un minuto cuente como "con voz"
+  x_minutos_activos: 3        # X
+  y_ventana_min: 5            # Y
+  z_calma_min: 5              # Z
+  n_fusion_min: 10            # N
+  voz_dispara: true           # actividad + voz en el mismo minuto = despertar inmediato
+  voz_sola_min: 2             # minutos con voz dentro de la ventana Y que bastan sin movimiento (llanto quieta)
+
+# --- Noche -----------------------------------------------------------------
+noche:
+  inicio: "19:00"             # ventana de análisis (hora de Madrid). La noche se nombra por la
+  fin: "09:00"                # fecha de la tarde en que empieza.
+  dormirse_calma_min: 15      # se considera dormida al inicio del primer tramo de calma de al
+                              # menos estos minutos, tras haber detectado actividad en la cuna
+                              # (así la cuna vacía antes de acostarla no cuenta como sueño)
+  despertar_final_desde: "06:30"  # el último despertar que empiece después de esta hora es el
+                              # despertar de la mañana (no cuenta como despertar nocturno)
+
+# --- Almacenamiento y limpieza ----------------------------------------------
+almacenamiento:
+  dias_clips_sin_etiquetar: 14  # se borran pasados estos días
+  dias_clips_etiquetados: 0     # 0 = conservar siempre los etiquetados
+  aviso_gb: 5                   # aviso en el panel si los clips ocupan más
+  dias_datos_por_segundo: 120   # métricas por segundo (las noches con clips etiquetados se conservan siempre
+                                # porque las necesita la calibración)
+
+# --- Resumen matutino por Telegram ----------------------------------------
+telegram:
+  activado: true              # solo funciona si TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID están en .env
+  nombre: "tu bebé"            # cómo se la nombra en los mensajes y en el panel
