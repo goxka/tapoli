@@ -1,43 +1,45 @@
 <div align="center">
 
+<sub>**English** · [Español](README.es.md)</sub>
+
 <img src="docs/icon.png" width="96" alt="Tapoli">
 
 # Tapoli
 
-**Análisis del sueño de tu bebé con una cámara Tapo, 100 % en local.**
+**Baby sleep tracking with a Tapo camera, 100% local.**
 
-Cuántas veces se ha despertado, cuánto ha dormido y cómo de inquieta ha estado,
-cada mañana en tu móvil — sin nube, sin suscripciones y sin que ningún vídeo salga de casa.
+How many times your baby woke up, how long they slept and how restless the night was —
+on your phone every morning. No cloud, no subscription, and no video ever leaves your home.
 
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![go2rtc](https://img.shields.io/badge/go2rtc-WebRTC-5B4FC4)
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)
-![License](https://img.shields.io/badge/licencia-MIT-green)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-<img src="docs/hero.png" alt="Capturas de Tapoli" width="100%">
+<img src="docs/hero.png" alt="Tapoli screenshots" width="100%">
 
-<sub>Capturas con datos de demostración inventados.</sub>
+<sub>Screenshots use made-up demo data. The app interface is currently in Spanish.</sub>
 
 </div>
 
 ---
 
-## ✨ Qué hace
+## ✨ Features
 
 | | |
 |---|---|
-| 🌙 **Despertar ≠ moverse** | Algoritmo tipo actigrafía: girarse dormida es *inquietud*; actividad sostenida o llanto es *despertar*. |
-| 🛏️ **Detecta la cuna vacía** | Si la sacáis de la cuna, ese rato no cuenta como sueño (quietud total tras ver a un adulto). |
-| 📈 **Diario de sueño y tendencias** | Una fila por noche en la misma escala horaria: horarios, regularidad, cuánto tarda en dormirse. |
-| 🎬 **Clips cortos para revisar** | Solo guarda unos segundos de cada movimiento y solo te pregunta por los **dudosos**. |
-| 🎯 **Se calibra con tus etiquetas** | Prueba cientos de combinaciones de umbrales y te propone la que más acierta (nunca sin tu permiso). |
-| 📺 **Directo en tiempo real** | WebRTC con < 1 s de retraso y sonido, usando la misma conexión que el análisis. |
-| 📝 **Notas por noche** | Dientes, vacunas, siestas… para ver qué influye. |
-| ✈️ **Resumen por Telegram** | Cada mañana, a todos los móviles que vincules desde la app. |
-| 📱 **Web app para iPhone** | Se añade a la pantalla de inicio y funciona como una app. Modo claro y oscuro. |
-| 🔒 **Privado** | Todo corre en tu servidor/NAS. El panel solo responde a la red local. |
+| 🌙 **Waking ≠ moving** | Actigraphy-style algorithm: rolling over in their sleep counts as *restlessness*; sustained activity or crying counts as *waking up*. |
+| 🛏️ **Empty-crib detection** | If you take the baby out of the crib, that time isn't counted as sleep (total stillness right after an adult is seen). |
+| 📈 **Sleep diary and trends** | One row per night on the same time scale: schedules, regularity, how long it takes to fall asleep. |
+| 🎬 **Short clips to review** | Only a few seconds of each movement are kept, and you're only asked about the **uncertain** ones. |
+| 🎯 **Calibrates with your labels** | Tries hundreds of threshold combinations and suggests the most accurate one — never applied without your OK. |
+| 📺 **Real-time live view** | WebRTC with < 1 s latency and audio, over the same camera connection used for analysis. |
+| 📝 **Notes per night** | Teething, vaccines, naps… to see what makes a difference. |
+| ✈️ **Telegram summary** | Every morning, to every phone you link from the app. |
+| 📱 **iPhone web app** | Add it to your home screen and it works like a native app. Light and dark mode. |
+| 🔒 **Private** | Everything runs on your own server/NAS. The panel only answers on your local network. |
 
 <table>
 <tr>
@@ -46,86 +48,86 @@ cada mañana en tu móvil — sin nube, sin suscripciones y sin que ningún víd
 <td><img src="docs/screenshots/noche.png" width="200"></td>
 <td><img src="docs/screenshots/inicio_claro.png" width="200"></td>
 </tr>
-<tr align="center"><td>Inicio</td><td>Tendencias</td><td>Noche y notas</td><td>Modo claro</td></tr>
+<tr align="center"><td>Home</td><td>Trends</td><td>Night & notes</td><td>Light mode</td></tr>
 </table>
 
-## 🧩 Cómo funciona
+## 🧩 How it works
 
 ```mermaid
 flowchart LR
-    CAM["📷 Cámara Tapo<br/>(RTSP, vídeo + audio)"] -->|una sola conexión| G2R["go2rtc"]
-    G2R -->|RTSP local| AN["Analizador<br/>movimiento · sonido · clips"]
+    CAM["📷 Tapo camera<br/>(RTSP, video + audio)"] -->|single connection| G2R["go2rtc"]
+    G2R -->|local RTSP| AN["Analyzer<br/>motion · sound · clips"]
     G2R -->|WebRTC| WEB
     AN --> DB[("SQLite")]
-    AN --> CL["Clips MP4<br/>(solo episodios)"]
-    DB --> WEB["Panel web<br/>(FastAPI + PWA)"]
+    AN --> CL["MP4 clips<br/>(episodes only)"]
+    DB --> WEB["Web panel<br/>(FastAPI + PWA)"]
     AN -->|09:00| TG["✈️ Telegram"]
-    WEB --> PHONE["📱 Tu móvil<br/>(red local)"]
+    WEB --> PHONE["📱 Your phone<br/>(local network)"]
 ```
 
-- **Una sola conexión a la cámara**: go2rtc la abre y la reparte. La app oficial de Tapo sigue funcionando.
-- **Movimiento**: diferencia entre fotogramas en baja resolución (3 fps, escala de grises), solo dentro de la **zona de la cuna** que dibujas en la app. Ignora el grano del infrarrojo y los cambios bruscos de luz.
-- **Sonido**: nivel y detección sencilla de voz/llanto (energía sostenida en 300–3000 Hz sobre el ruido de fondo).
-- **Despertar**: un minuto es *activo* con ≥ K segundos de movimiento. Hay despertar si en una ventana de **Y** min hay ≥ **X** minutos activos, o actividad + llanto; termina tras **Z** min de calma; se fusionan si los separan < **N** min. Todos los umbrales son configurables y calibrables.
-- **Zona autoajustable**: si mueves la cámara, compara los bordes de la imagen con una referencia y desplaza la zona sola.
-- **Ligero**: pensado para un NAS modesto (probado en un Intel Celeron J4025): ~5 % de un núcleo.
+- **One camera connection**: go2rtc opens it and shares it. The official Tapo app keeps working.
+- **Motion**: frame differencing at low resolution (3 fps, grayscale), only inside the **crib zone** you draw in the app. Infrared grain and sudden lighting changes are ignored.
+- **Sound**: level plus simple voice/crying detection (sustained energy in the 300–3000 Hz band above the background noise).
+- **Waking up**: a minute is *active* with ≥ K seconds of motion. A wake-up starts when there are ≥ **X** active minutes within a **Y**-minute window, or activity plus crying; it ends after **Z** minutes of calm; wake-ups less than **N** minutes apart are merged. Every threshold is configurable and can be calibrated.
+- **Self-adjusting zone**: if the camera gets moved, Tapoli compares image edges against a reference and shifts the crib zone automatically.
+- **Lightweight**: built for a modest NAS (tested on an Intel Celeron J4025): about 5% of one CPU core.
 
-## 🚀 Puesta en marcha
+## 🚀 Getting started
 
-**Necesitas:** una cámara Tapo con RTSP (C200, C210, C100…), un equipo con Docker en la misma red (un NAS Synology vale) y 5 minutos.
+**You need:** a Tapo camera with RTSP (C200, C210, C100…), a machine running Docker on the same network (a Synology NAS works) and 5 minutes.
 
-1. **Crea una cuenta de cámara** en la app Tapo: *cámara → Ajustes → Ajustes avanzados → Cuenta de la cámara*.
-2. **Clona y configura:**
+1. **Create a camera account** in the Tapo app: *camera → Settings → Advanced settings → Camera account*.
+2. **Clone and configure:**
    ```bash
    git clone https://github.com/goxka/tapoli.git && cd tapoli
-   cp .env.example .env      # rellena IP, usuario y contraseña de la cámara e IP del servidor
+   cp .env.example .env      # fill in the camera IP, user and password, and your server's IP
    ```
-3. **Arranca:**
+3. **Start it:**
    ```bash
    docker compose up -d --build
    ```
-4. Abre **`http://IP-DEL-SERVIDOR:8095`** en el móvil → *Ajustes → Zona de la cuna* y dibuja el interior de la cuna.
-5. En iPhone: *Compartir → Añadir a pantalla de inicio*.
+4. Open **`http://SERVER-IP:8095`** on your phone → *Ajustes → Zona de la cuna* (Settings → Crib zone) and draw the inside of the crib.
+5. On iPhone: *Share → Add to Home Screen*.
 
-> **Nota Synology / redes "bridge" sin salida**: Tapoli usa `network_mode: host` y la imagen se construye con `network: host`, así funciona también en NAS donde la red bridge de Docker no llega a la cámara.
+> **Synology / "bridge" networks with no outbound route**: Tapoli uses `network_mode: host` and builds the image with `network: host`, so it also works on NAS setups where Docker's bridge network can't reach the camera.
 
-### Configuración
+### Configuration
 
-- **`.env`** — cámara, IP del servidor, usuario (PUID/PGID), zona horaria y token del bot de Telegram. Nunca se sube al repositorio.
-- **`config/config.yaml`** — todos los umbrales, comentados línea a línea. Se crea solo la primera vez a partir de [`app/tapoli/config.default.yaml`](app/tapoli/config.default.yaml) y se recarga en caliente. La mayoría se cambian desde la app (*Ajustes*).
+- **`.env`** — camera, server IP, user (PUID/PGID), time zone and Telegram bot token. Never committed to the repository.
+- **`config/config.yaml`** — every threshold, commented line by line (comments in Spanish). It's created automatically on first run from [`app/tapoli/config.default.yaml`](app/tapoli/config.default.yaml) and hot-reloaded. Most settings can be changed from the app (*Ajustes*).
 
-### Telegram (opcional)
+### Telegram (optional)
 
-Crea un bot con [@BotFather](https://t.me/BotFather), pon el token en `TELEGRAM_BOT_TOKEN` y vincula tu móvil desde *Ajustes → Resumen por Telegram*. La vinculación usa un código de un solo uso.
+Create a bot with [@BotFather](https://t.me/BotFather), put its token in `TELEGRAM_BOT_TOKEN`, and link your phone from *Ajustes → Resumen por Telegram*. Linking uses a one-time code.
 
-## 🎯 Etiquetar y calibrar
+## 🎯 Labeling and calibration
 
-1. En **Revisar** aparecen solo los clips dudosos. Marca *Dormida* (aunque se moviera), *Despierta*, *Falsa alarma* o *No lo sé*.
-2. Tus etiquetas **mandan** sobre el algoritmo en el resumen de esa noche.
-3. Con ~30 etiquetas, *Ajustes → Calibración* busca la mejor combinación de X, Y, Z, N y sensibilidad, te enseña precisión y sensibilidad, y solo la aplica si confirmas. Hay historial para volver atrás.
+1. **Revisar** (Review) only shows the uncertain clips. Mark them *Dormida* (asleep — even if they moved), *Despierta* (awake), *Falsa alarma* (false alarm) or *No lo sé* (not sure).
+2. Your labels **override** the algorithm in that night's summary.
+3. With around 30 labels, *Ajustes → Calibración* searches for the best combination of X, Y, Z, N and sensitivity, shows its precision and recall, and only applies it if you confirm. A history lets you roll back.
 
-## 🔒 Privacidad
+## 🔒 Privacy
 
-- Nada sale de tu red salvo el resumen de Telegram, si lo activas.
-- El panel rechaza conexiones que no vengan de una red privada. **No abras el puerto 8095 en el router**; para verlo fuera de casa usa una VPN.
-- No se graba vídeo continuo: solo clips cortos de cada movimiento, que se borran a los 14 días si no los etiquetas.
+- Nothing leaves your network except the Telegram summary, if you enable it.
+- The panel rejects connections that don't come from a private network. **Don't expose port 8095 on your router**; use a VPN to check it from outside your home.
+- There's no continuous recording: only short clips of each movement, deleted after 14 days unless you label them.
 
-## 🛠️ Desarrollo
+## 🛠️ Development
 
 ```
 app/tapoli/
-  runner.py      analizador (captura, métricas, clips, noches, Telegram)
-  capture.py     conexión RTSP con reconexión y espera creciente
-  motion.py      detector de movimiento          audio.py   nivel y voz/llanto
-  analysis.py    algoritmo de despertar, noches, calibración
-  align.py       reajuste automático de la zona   clips.py   búfer circular y clips
-  web.py         API y panel (FastAPI)            static/    web app (sin dependencias)
+  runner.py      analyzer (capture, metrics, clips, nights, Telegram)
+  capture.py     RTSP connection with reconnection and backoff
+  motion.py      motion detector                   audio.py   sound level and voice/crying
+  analysis.py    wake-up algorithm, nights, calibration
+  align.py       automatic crib-zone adjustment    clips.py   ring buffer and clips
+  web.py         API and panel (FastAPI)           static/    web app (no dependencies)
 tools/
-  deploy.sh      publicación vía Portainer + verificación   verify.py  batería de pruebas
+  deploy.sh      deploy via Portainer + verification   verify.py  post-deploy test suite
 ```
 
-## 📄 Licencia
+## 📄 License
 
-[MIT](LICENSE). Incluye `video-rtc.js` de [go2rtc](https://github.com/AlexxIT/go2rtc) (MIT, © Alexey Khit).
+[MIT](LICENSE). Includes `video-rtc.js` from [go2rtc](https://github.com/AlexxIT/go2rtc) (MIT, © Alexey Khit).
 
-<sub>Tapoli no está afiliado a TP-Link. No es un dispositivo médico: es una herramienta para conocer mejor las noches, no para vigilar la salud de nadie.</sub>
+<sub>Tapoli is not affiliated with TP-Link. It is not a medical device: it's a tool to better understand your baby's nights, not to monitor anyone's health.</sub>
